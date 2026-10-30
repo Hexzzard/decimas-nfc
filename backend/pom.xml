@@ -29,7 +29,12 @@
 	<properties>
 		<java.version>25</java.version>
 	</properties>
+
+	<!-- =============================================================== -->
+	<!-- Dependencias comunes: se usan en TODOS los builds (PC y Lambda)  -->
+	<!-- =============================================================== -->
 	<dependencies>
+		<!-- Web y validación -->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-validation</artifactId>
@@ -39,6 +44,26 @@
 			<artifactId>spring-boot-starter-webmvc</artifactId>
 		</dependency>
 
+		<!-- Base de datos: JDBC, migraciones y driver de PostgreSQL -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-jdbc</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-flyway</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.flywaydb</groupId>
+			<artifactId>flyway-database-postgresql</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.postgresql</groupId>
+			<artifactId>postgresql</artifactId>
+			<scope>runtime</scope>
+		</dependency>
+
+		<!-- Pruebas -->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-validation-test</artifactId>
@@ -49,34 +74,11 @@
 			<artifactId>spring-boot-starter-webmvc-test</artifactId>
 			<scope>test</scope>
 		</dependency>
-
-		<dependency>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-jdbc</artifactId>
-		</dependency>
-			<dependency>
-				<groupId>org.springframework.boot</groupId>
-				<artifactId>spring-boot-starter-flyway</artifactId>
-			</dependency>
-			<dependency>
-				<groupId>org.flywaydb</groupId>
-				<artifactId>flyway-database-postgresql</artifactId>
-			</dependency>
-			<dependency>
-				<groupId>org.postgresql</groupId>
-				<artifactId>postgresql</artifactId>
-				<scope>runtime</scope>
-		</dependency>
-
-		<dependency>
-			<groupId>com.amazonaws.serverless</groupId>
-			<artifactId>aws-serverless-java-container-springboot4</artifactId>
-			<version>3.0.5</version>
-		</dependency>
 	</dependencies>
 
-
-
+	<!-- =============================================================== -->
+	<!-- Build por defecto: JAR de Spring Boot con Tomcat (para tu PC)    -->
+	<!-- =============================================================== -->
 	<build>
 		<plugins>
 			<plugin>
@@ -86,16 +88,51 @@
 		</plugins>
 	</build>
 
+	<!-- =============================================================== -->
+	<!-- Perfil "lambda": se activa solo con -Plambda                     -->
+	<!--   .\mvnw.cmd -Plambda clean package                              -->
+	<!-- =============================================================== -->
 	<profiles>
-		<!-- Empaquetado para AWS Lambda: .\mvnw.cmd -Plambda clean package -->
 		<profile>
 			<id>lambda</id>
+
 			<properties>
 				<!-- El JAR "fat" de Spring Boot (con JARs anidados) no sirve en Lambda -->
 				<spring-boot.repackage.skip>true</spring-boot.repackage.skip>
 			</properties>
+
+			<dependencies>
+				<!-- Solo para Lambda: en tu PC reemplazaría a Tomcat y el backend se cerraría -->
+				<dependency>
+					<groupId>com.amazonaws.serverless</groupId>
+					<artifactId>aws-serverless-java-container-springboot4</artifactId>
+					<version>3.0.5</version>
+				</dependency>
+			</dependencies>
+
 			<build>
 				<plugins>
+					<!-- Suma la carpeta src/lambda/java (donde vive LambdaHandler) solo en este perfil -->
+					<plugin>
+						<groupId>org.codehaus.mojo</groupId>
+						<artifactId>build-helper-maven-plugin</artifactId>
+						<executions>
+							<execution>
+								<id>codigo-lambda</id>
+								<phase>generate-sources</phase>
+								<goals>
+									<goal>add-source</goal>
+								</goals>
+								<configuration>
+									<sources>
+										<source>src/lambda/java</source>
+									</sources>
+								</configuration>
+							</execution>
+						</executions>
+					</plugin>
+
+					<!-- Empaqueta todas las clases en un solo JAR "plano" para Lambda -->
 					<plugin>
 						<groupId>org.apache.maven.plugins</groupId>
 						<artifactId>maven-shade-plugin</artifactId>

@@ -34,3 +34,4 @@ build/
 .env
 .aws-sam/
 samconfig.toml
+*.local.ps1
