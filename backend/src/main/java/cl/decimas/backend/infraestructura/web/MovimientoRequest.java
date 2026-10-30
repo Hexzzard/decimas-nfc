@@ -5,6 +5,7 @@ import cl.decimas.backend.dominio.Movimiento;
 import cl.decimas.backend.dominio.TipoMovimiento;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
+import jakarta.validation.constraints.Size;
 import java.time.Instant;
 import java.util.UUID;
 
@@ -14,9 +15,11 @@ public record MovimientoRequest(
         @NotNull Asignatura asignatura,
         @NotNull TipoMovimiento tipo,
         @Positive int cantidad,
-        @NotNull Instant fecha) {
+        @NotNull Instant fecha,
+        @Size(max = 100) String motivo,
+        UUID loteId) {
 
     Movimiento aDominio(String estudianteId) {
-        return new Movimiento(id, estudianteId, asignatura, tipo, cantidad, fecha);
+        return new Movimiento(id, estudianteId, asignatura, tipo, cantidad, fecha, motivo, loteId);
     }
 }

@@ -13,8 +13,8 @@ export const ESTUDIANTES_DEMO: Estudiante[] = [
 ];
 
 export const MOVIMIENTOS_DEMO: Movimiento[] = [
-  { id: 'demo-1', estudianteId: 'e1', asignatura: 'MAT', tipo: 'OTORGAR', cantidad: 3, fecha: '2026-10-20T14:10:00Z', motivo: 'Participación' },
-  { id: 'demo-2', estudianteId: 'e1', asignatura: 'MAT', tipo: 'OTORGAR', cantidad: 2, fecha: '2026-10-23T15:30:00Z', motivo: 'Tarea' },
-  { id: 'demo-3', estudianteId: 'e1', asignatura: 'MAT', tipo: 'CANJEAR', cantidad: 4, fecha: '2026-10-27T13:00:00Z' },
-  { id: 'demo-4', estudianteId: 'e3', asignatura: 'MAT', tipo: 'OTORGAR', cantidad: 5, fecha: '2026-10-27T13:05:00Z', motivo: 'Buen comportamiento' },
+  { id: '00000000-0000-4000-8000-000000000001', estudianteId: 'e1', asignatura: 'MAT', tipo: 'OTORGAR', cantidad: 3, fecha: '2026-10-20T14:10:00Z', motivo: 'Participación' },
+  { id: '00000000-0000-4000-8000-000000000002', estudianteId: 'e1', asignatura: 'MAT', tipo: 'OTORGAR', cantidad: 2, fecha: '2026-10-23T15:30:00Z', motivo: 'Tarea' },
+  { id: '00000000-0000-4000-8000-000000000003', estudianteId: 'e1', asignatura: 'MAT', tipo: 'CANJEAR', cantidad: 4, fecha: '2026-10-27T13:00:00Z' },
+  { id: '00000000-0000-4000-8000-000000000004', estudianteId: 'e3', asignatura: 'MAT', tipo: 'OTORGAR', cantidad: 5, fecha: '2026-10-27T13:05:00Z', motivo: 'Buen comportamiento' },
 ];

@@ -11,8 +11,11 @@ public record Movimiento(
         Asignatura asignatura,
         TipoMovimiento tipo,
         int cantidad,
-        Instant fecha) {
+        Instant fecha,
+        String motivo,   // opcional: puede ser null
+        UUID loteId) {   // opcional: puede ser null
 
+    /** Constructor compacto: valida los datos. Así no puede existir un movimiento inválido. */
     public Movimiento {
         Objects.requireNonNull(id, "id");
         Objects.requireNonNull(estudianteId, "estudianteId");
@@ -23,6 +26,12 @@ public record Movimiento(
             throw new ErrorDominio(CodigoError.CANTIDAD_INVALIDA,
                     "La cantidad debe ser positiva (recibido: " + cantidad + ")");
         }
+    }
+
+    /** Constructor de compatibilidad: movimientos sin motivo ni lote. */
+    public Movimiento(UUID id, String estudianteId, Asignatura asignatura,
+                      TipoMovimiento tipo, int cantidad, Instant fecha) {
+        this(id, estudianteId, asignatura, tipo, cantidad, fecha, null, null);
     }
 
     /** Cuánto cambia el saldo: positivo al otorgar, negativo al canjear. */
