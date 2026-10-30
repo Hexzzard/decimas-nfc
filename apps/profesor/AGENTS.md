@@ -1,41 +1,49 @@
-This is an Expo/React Native mobile application. Prioritize mobile-first patterns, performance, and cross-platform compatibility.
+# apps/profesor — App del profesor (Expo + React Native + TypeScript)
 
-## Expo has changed — do not trust your training data
+App offline-first: el profesor registra décimas en SQLite local y sincroniza con la API cuando hay conexión y sesión.
 
-Expo ships breaking changes every SDK release. APIs you remember are likely renamed, moved, or removed. Before writing any code that touches an Expo, EAS, or React Native API:
+## Expo cambia rápido: no confíes en tu memoria
 
-1. Read the major version of the `expo` package in `package.json`.
-2. Fetch the matching versioned docs: `https://docs.expo.dev/versions/v<major>.0.0/`
-3. For anything else, fetch https://docs.expo.dev/llms.txt — an index of all Expo docs with corrections to common LLM misconceptions. Follow its links to the specific page you need; never answer from memory.
+Antes de usar una API de Expo o React Native, revisa la versión de `expo` en `package.json` y consulta la documentación
+de esa versión (`https://docs.expo.dev/versions/v<major>.0.0/` o el índice `https://docs.expo.dev/llms.txt`).
+- Instala paquetes con `npx expo install <paquete>` (elige versiones compatibles con el SDK). Para pasar flags a npm
+  en PowerShell: `npx expo install <paquete> "--" --save-dev`.
+- La app se prueba en **Expo Go**: no agregues librerías con código nativo fuera de Expo Go sin preguntar (requieren un development build).
+- **No uses Expo Router**: la navegación actual son modales sobre una pantalla. No crees `src/app/`.
 
-## Commands
+## Estructura (`src/`)
 
-Use `bunx` instead of `npx` if the project uses bun (`bun.lock` present).
+| Carpeta | Contenido | Puede importar |
+|---|---|---|
+| `dominio/` | Tipos y funciones puras: saldos, validaciones, lotes | Nada externo (ni React, ni Expo) |
+| `aplicacion/` | Puertos (`repositorio.ts`, `identidad.ts`, `sincronizacion.ts`) y casos de uso (`servicioDecimas.ts`, `sesion.ts`) | `dominio` |
+| `infraestructura/` | Adaptadores: SQLite, HTTP hacia la API, Supabase Auth, `expo-secure-store` | `aplicacion`, `dominio` |
+| `estado/` | Hooks que conectan casos de uso con React (`useLibroDecimas`, `useSesion`) | Todo lo anterior |
+| `ui/` | Componentes y pantallas; estilos desde `ui/tema.ts` | `estado`, `dominio`, `config` y las clases de error de `aplicacion` (nunca adaptadores de `infraestructura`) |
 
-```bash
-npx expo install <package>  # ALWAYS use instead of npm/yarn/pnpm/bun add — resolves SDK-compatible versions
-npx expo start              # start the dev server
-npx expo lint               # lint
-npx tsc --noEmit            # typecheck
-npx expo-doctor             # diagnose dependency and config issues
-npx expo install --fix      # fix incompatible package versions
+- `App.tsx` es la **raíz de composición**: el único lugar donde se eligen los adaptadores.
+- Los casos de uso reciben dependencias por parámetro (p. ej. `generarId`, `ahora`) para poder probarse.
+- Errores esperados se modelan como clases con `motivo`/`codigo` (`ErrorDominio`, `ErrorEnvio`, `ErrorIdentidad`)
+  y llevan `Object.setPrototypeOf(this, X.prototype)` para que `instanceof` funcione.
+
+## Reglas específicas
+
+- **SQLite:** el esquema se versiona con `PRAGMA user_version` en `repositorioSqlite.ts`; agrega un bloque `if (version < n)` nuevo, nunca edites uno existente.
+- **Concurrencia:** las operaciones que leen y luego escriben pasan por la cola de `servicioDecimas.ts`; no la rodees.
+- **Sesión:** el access token vive solo en memoria; en `expo-secure-store` se guarda solo `{ refreshToken, correo }`.
+  Nunca uses AsyncStorage para tokens. El inicio de sesión **no bloquea** la app: solo se requiere para sincronizar.
+- La contraseña va directo a Supabase Auth; nunca la envíes a nuestra API ni la registres en logs.
+
+## Pruebas
+
+- Jest (`jest-expo`). Pruebas junto al archivo: `algo.ts` → `algo.test.ts`.
+- Prueba la lógica (dominio, casos de uso, adaptadores HTTP) sin red: usa los fakes de `src/aplicacion/__fakes__/`
+  y reemplaza `globalThis.fetch` en las pruebas de adaptadores.
+
+## Comandos (desde `apps/profesor/`)
+
+```powershell
+npm run typecheck   # tsc --noEmit (la CI lo ejecuta)
+npm test            # Jest (la CI lo ejecuta con --ci)
+npx expo start      # servidor de desarrollo
 ```
-
-Run lint and typecheck before declaring any task done.
-
-## Navigation & Routing
-
-- Use **Expo Router** for all navigation. Routes live in `src/app/` — every file there is a screen, `_layout.tsx` files define navigators. Keep non-route code (components, hooks, utils) outside `src/app/`.
-- Import `Link`, `router`, and `useLocalSearchParams` from `expo-router`.
-- Docs: https://docs.expo.dev/router/introduction.md
-
-## Building with EAS
-
-Use EAS to build, sign, and submit the app in the cloud (`eas build`, `eas submit`) and to ship over-the-air updates (`eas update`) — no local Xcode or Android Studio required. Run EAS CLI as `bunx eas-cli <command>` in Bun projects, or `npx eas-cli@latest <command>` otherwise; substitute that for bare `eas` in docs examples.
-Docs: https://docs.expo.dev/eas/index.md
-
-## Rules
-
-- If `ios/` and `android/` directories do not exist, they are generated (Continuous Native Generation). Never create or edit them by hand — configure native behavior in `app.json` and config plugins.
-- Expo Go only includes its bundled native modules. After adding a library with native code, the app needs a development build: `npx expo run:ios|android` locally, or `eas build --profile development`.
-- Prefer recommended Expo modules over third-party libraries, and check your available skills before adding dependencies. Docs: https://docs.expo.dev/versions/latest/index.md
