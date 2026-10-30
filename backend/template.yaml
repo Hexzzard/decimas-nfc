@@ -11,6 +11,9 @@ Parameters:
   DbPassword:
     Type: String
     NoEcho: true   # no se muestra en la consola de CloudFormation
+  SupabaseUrl:
+    Type: String
+    Description: URL del proyecto de Supabase (https://xxxx.supabase.co)
 
 Resources:
   DecimasApi:
@@ -44,6 +47,7 @@ Resources:
           SPRING_FLYWAY_ENABLED: 'false'
           # Serverless: una conexión por instancia
           SPRING_DATASOURCE_HIKARI_MAXIMUMPOOLSIZE: '1'
+          SUPABASE_URL: !Ref SupabaseUrl
       Events:
         Todo:
           Type: HttpApi

@@ -12,14 +12,16 @@ import { SelectorMotivo } from '../componentes/SelectorMotivo';
 import { textoDecimas } from '../formato';
 import { colores, radio } from '../tema';
 import { BarraSincronizacion } from '../componentes/BarraSincronizacion';
+import type { SesionUI } from '../../estado/useSesion';
 
 type Props = {
   estudiantes: readonly Estudiante[];
   libro: LibroDecimas;
+  sesion: SesionUI;
   onAbrirEstudiante: (estudiante: Estudiante) => void;
 };
 
-export function PantallaCurso({ estudiantes, libro, onAbrirEstudiante }: Props) {
+export function PantallaCurso({ estudiantes, libro, sesion, onAbrirEstudiante }: Props) {
   // null = modo normal; un Set (aunque esté vacío) = modo selección masiva
   const [seleccion, setSeleccion] = useState<Set<string> | null>(null);
   const [cantidad, setCantidad] = useState(1);
@@ -71,7 +73,7 @@ export function PantallaCurso({ estudiantes, libro, onAbrirEstudiante }: Props) 
           </Pressable>
         ) : null}
       </View>
-      {seleccion ? null : <BarraSincronizacion sincronizacion={libro.sincronizacion} />}
+      {seleccion ? null : <BarraSincronizacion sincronizacion={libro.sincronizacion} sesion={sesion} />}
       <FlatList
         data={estudiantes}
         keyExtractor={(e) => e.id}

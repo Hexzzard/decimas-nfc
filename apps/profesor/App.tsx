@@ -5,12 +5,16 @@ import { useMemo, useState } from 'react';
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { crearServicioDecimas } from './src/aplicacion/servicioDecimas';
+import { crearGestorSesion } from './src/aplicacion/sesion';
 import { crearSincronizador } from './src/aplicacion/sincronizacion';
-import { URL_API } from './src/config';
+import { SUPABASE_PUBLISHABLE_KEY, SUPABASE_URL, URL_API } from './src/config';
 import { ESTUDIANTES_DEMO, MOVIMIENTOS_DEMO } from './src/datos/demo';
 import type { Estudiante } from './src/dominio/estudiante';
 import { useLibroDecimas } from './src/estado/useLibroDecimas';
+import { useSesion } from './src/estado/useSesion';
+import { crearAlmacenSeguro } from './src/infraestructura/almacenSeguro';
 import { crearClienteHttp } from './src/infraestructura/clienteHttp';
+import { crearIdentidadSupabase } from './src/infraestructura/identidadSupabase';
 import { crearRepositorioSqlite, prepararBaseDeDatos } from './src/infraestructura/repositorioSqlite';
 import { ModalEstudiante } from './src/ui/pantallas/ModalEstudiante';
 import { PantallaCurso } from './src/ui/pantallas/PantallaCurso';
@@ -39,14 +43,23 @@ async function inicializar(db: SQLiteDatabase) {
 function Contenido() {
   const db = useSQLiteContext();
   // "Raíz de composición": aquí se elige qué adaptador usa cada caso de uso.
-  const { servicio, sincronizador } = useMemo(() => {
+  const { servicio, sincronizador, gestorSesion } = useMemo(() => {
     const repositorio = crearRepositorioSqlite(db);
+    const gestorSesion = crearGestorSesion(
+      crearIdentidadSupabase(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY),
+      crearAlmacenSeguro(),
+    );
     return {
       servicio: crearServicioDecimas(repositorio, () => Crypto.randomUUID()),
-      sincronizador: crearSincronizador(repositorio, crearClienteHttp(URL_API)),
+      sincronizador: crearSincronizador(
+        repositorio,
+        crearClienteHttp(URL_API, () => gestorSesion.obtenerTokenVigente()),
+      ),
+      gestorSesion,
     };
   }, [db]);
   const libro = useLibroDecimas(servicio, sincronizador);
+  const sesion = useSesion(gestorSesion);
   const [abierto, setAbierto] = useState<Estudiante | null>(null);
 
   if (libro.cargando) {
@@ -59,7 +72,12 @@ function Contenido() {
 
   return (
     <>
-      <PantallaCurso estudiantes={ESTUDIANTES_DEMO} libro={libro} onAbrirEstudiante={setAbierto} />
+      <PantallaCurso
+        estudiantes={ESTUDIANTES_DEMO}
+        libro={libro}
+        sesion={sesion}
+        onAbrirEstudiante={setAbierto}
+      />
       <ModalEstudiante estudiante={abierto} libro={libro} onCerrar={() => setAbierto(null)} />
     </>
   );

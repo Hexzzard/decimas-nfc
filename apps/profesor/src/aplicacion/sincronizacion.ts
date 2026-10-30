@@ -13,7 +13,7 @@ export interface ClienteDecimas {
   enviar(movimiento: Movimiento): Promise<void>;
 }
 
-export type MotivoErrorEnvio = 'SIN_CONFIGURACION' | 'SIN_CONEXION' | 'RECHAZADO';
+export type MotivoErrorEnvio = 'SIN_CONFIGURACION' | 'SIN_CONEXION' | 'NO_AUTENTICADO' | 'SIN_PERMISO' | 'RECHAZADO';
 
 export class ErrorEnvio extends Error {
   readonly motivo: MotivoErrorEnvio;
