@@ -1,0 +1,14 @@
+export type CodigoError = 'CANTIDAD_INVALIDA' | 'SALDO_INSUFICIENTE' | 'SIN_ESTUDIANTES';
+
+export class ErrorDominio extends Error {
+  readonly codigo: CodigoError;
+
+  constructor(codigo: CodigoError, mensaje: string) {
+    super(mensaje);
+    this.name = 'ErrorDominio';
+    this.codigo = codigo;
+    // Al extender Error, algunos transpiladores rompen `instanceof`. Esta línea lo corrige.
+    Object.setPrototypeOf(this, ErrorDominio.prototype);
+  }
+}
+
