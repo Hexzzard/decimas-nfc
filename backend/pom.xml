@@ -67,6 +67,12 @@
 				<artifactId>postgresql</artifactId>
 				<scope>runtime</scope>
 		</dependency>
+
+		<dependency>
+			<groupId>com.amazonaws.serverless</groupId>
+			<artifactId>aws-serverless-java-container-springboot4</artifactId>
+			<version>3.0.5</version>
+		</dependency>
 	</dependencies>
 
 
@@ -79,5 +85,43 @@
 			</plugin>
 		</plugins>
 	</build>
+
+	<profiles>
+		<!-- Empaquetado para AWS Lambda: .\mvnw.cmd -Plambda clean package -->
+		<profile>
+			<id>lambda</id>
+			<properties>
+				<!-- El JAR "fat" de Spring Boot (con JARs anidados) no sirve en Lambda -->
+				<spring-boot.repackage.skip>true</spring-boot.repackage.skip>
+			</properties>
+			<build>
+				<plugins>
+					<plugin>
+						<groupId>org.apache.maven.plugins</groupId>
+						<artifactId>maven-shade-plugin</artifactId>
+						<configuration>
+							<createDependencyReducedPom>false</createDependencyReducedPom>
+							<shadedArtifactAttached>true</shadedArtifactAttached>
+							<shadedClassifierName>lambda</shadedClassifierName>
+							<artifactSet>
+								<excludes>
+									<!-- En Lambda no hay servidor web: la librería de AWS lo reemplaza -->
+									<exclude>org.apache.tomcat.embed:*</exclude>
+								</excludes>
+							</artifactSet>
+						</configuration>
+						<executions>
+							<execution>
+								<phase>package</phase>
+								<goals>
+									<goal>shade</goal>
+								</goals>
+							</execution>
+						</executions>
+					</plugin>
+				</plugins>
+			</build>
+		</profile>
+	</profiles>
 
 </project>

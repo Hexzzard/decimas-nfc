@@ -1,0 +1,64 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Backend de décimas — Spring Boot en AWS Lambda
+
+Parameters:
+  DbUrl:
+    Type: String
+    Description: JDBC del transaction pooler de Supabase (puerto 6543)
+  DbUser:
+    Type: String
+  DbPassword:
+    Type: String
+    NoEcho: true   # no se muestra en la consola de CloudFormation
+
+Resources:
+  DecimasApi:
+    Type: AWS::Serverless::HttpApi
+    Properties:
+      # Freno de emergencia: la API aún no tiene autenticación
+      DefaultRouteSettings:
+        ThrottlingRateLimit: 5
+        ThrottlingBurstLimit: 10
+
+  DecimasFunction:
+    Type: AWS::Serverless::Function
+    DependsOn: DecimasLogs
+    Properties:
+      FunctionName: decimas-backend
+      CodeUri: target/backend-0.0.1-SNAPSHOT-lambda.jar
+      Handler: cl.decimas.backend.infraestructura.lambda.LambdaHandler::handleRequest
+      Runtime: java25
+      Architectures: [x86_64]
+      MemorySize: 1024
+      Timeout: 30
+      AutoPublishAlias: live
+      SnapStart:
+        ApplyOn: PublishedVersions
+      Environment:
+        Variables:
+          DB_URL: !Ref DbUrl
+          DB_USER: !Ref DbUser
+          DB_PASSWORD: !Ref DbPassword
+          # Las migraciones se aplican desde tu PC, nunca desde la Lambda
+          SPRING_FLYWAY_ENABLED: 'false'
+          # Serverless: una conexión por instancia
+          SPRING_DATASOURCE_HIKARI_MAXIMUMPOOLSIZE: '1'
+      Events:
+        Todo:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref DecimasApi
+            Path: /{proxy+}
+            Method: ANY
+
+  DecimasLogs:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: /aws/lambda/decimas-backend
+      RetentionInDays: 7
+
+Outputs:
+  ApiUrl:
+    Description: URL pública de la API
+    Value: !Sub https://${DecimasApi}.execute-api.${AWS::Region}.amazonaws.com
