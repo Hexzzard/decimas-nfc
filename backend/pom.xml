@@ -63,6 +63,12 @@
 			<scope>runtime</scope>
 		</dependency>
 
+		<!-- Seguridad: validar los JWT de Supabase -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-oauth2-resource-server</artifactId>
+		</dependency>
+
 		<!-- Pruebas -->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
