@@ -5,9 +5,12 @@ import { useMemo, useState } from 'react';
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { crearServicioDecimas } from './src/aplicacion/servicioDecimas';
+import { crearSincronizador } from './src/aplicacion/sincronizacion';
+import { URL_API } from './src/config';
 import { ESTUDIANTES_DEMO, MOVIMIENTOS_DEMO } from './src/datos/demo';
 import type { Estudiante } from './src/dominio/estudiante';
 import { useLibroDecimas } from './src/estado/useLibroDecimas';
+import { crearClienteHttp } from './src/infraestructura/clienteHttp';
 import { crearRepositorioSqlite, prepararBaseDeDatos } from './src/infraestructura/repositorioSqlite';
 import { ModalEstudiante } from './src/ui/pantallas/ModalEstudiante';
 import { PantallaCurso } from './src/ui/pantallas/PantallaCurso';
@@ -24,7 +27,7 @@ export default function App() {
   );
 }
 
-/** Se ejecuta antes de mostrar la app: crea la tabla y, la primera vez, carga los datos de ejemplo. */
+/** Se ejecuta antes de mostrar la app: prepara el esquema y, la primera vez, carga los datos de ejemplo. */
 async function inicializar(db: SQLiteDatabase) {
   await prepararBaseDeDatos(db);
   const repositorio = crearRepositorioSqlite(db);
@@ -36,11 +39,14 @@ async function inicializar(db: SQLiteDatabase) {
 function Contenido() {
   const db = useSQLiteContext();
   // "Raíz de composición": aquí se elige qué adaptador usa cada caso de uso.
-  const servicio = useMemo(
-    () => crearServicioDecimas(crearRepositorioSqlite(db), () => Crypto.randomUUID()),
-    [db],
-  );
-  const libro = useLibroDecimas(servicio);
+  const { servicio, sincronizador } = useMemo(() => {
+    const repositorio = crearRepositorioSqlite(db);
+    return {
+      servicio: crearServicioDecimas(repositorio, () => Crypto.randomUUID()),
+      sincronizador: crearSincronizador(repositorio, crearClienteHttp(URL_API)),
+    };
+  }, [db]);
+  const libro = useLibroDecimas(servicio, sincronizador);
   const [abierto, setAbierto] = useState<Estudiante | null>(null);
 
   if (libro.cargando) {

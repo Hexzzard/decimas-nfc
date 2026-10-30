@@ -11,6 +11,7 @@ import { SelectorCantidad } from '../componentes/SelectorCantidad';
 import { SelectorMotivo } from '../componentes/SelectorMotivo';
 import { textoDecimas } from '../formato';
 import { colores, radio } from '../tema';
+import { BarraSincronizacion } from '../componentes/BarraSincronizacion';
 
 type Props = {
   estudiantes: readonly Estudiante[];
@@ -70,7 +71,7 @@ export function PantallaCurso({ estudiantes, libro, onAbrirEstudiante }: Props) 
           </Pressable>
         ) : null}
       </View>
-
+      {seleccion ? null : <BarraSincronizacion sincronizacion={libro.sincronizacion} />}
       <FlatList
         data={estudiantes}
         keyExtractor={(e) => e.id}
