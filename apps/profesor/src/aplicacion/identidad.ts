@@ -22,7 +22,14 @@ export interface AlmacenSeguro {
   borrar(): Promise<void>;
 }
 
-export type MotivoErrorIdentidad = 'CREDENCIALES' | 'SESION_EXPIRADA' | 'SIN_SESION' | 'SIN_CONEXION' | 'SIN_CONFIGURACION';
+export type MotivoErrorIdentidad =
+  | 'CREDENCIALES'
+  | 'SESION_EXPIRADA'
+  | 'SIN_SESION'
+  | 'SIN_CONEXION'
+  | 'SIN_CONFIGURACION'
+  /** El proveedor respondió 200 pero con un cuerpo que no sirve (faltan tokens o la expiración). */
+  | 'RESPUESTA_INVALIDA';
 
 export class ErrorIdentidad extends Error {
   readonly motivo: MotivoErrorIdentidad;

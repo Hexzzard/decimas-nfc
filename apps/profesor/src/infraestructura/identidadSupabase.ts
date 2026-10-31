@@ -1,12 +1,31 @@
 import { ErrorIdentidad, type ProveedorIdentidad, type Sesion } from '../aplicacion/identidad';
 
-/** Lo que responde Supabase Auth en /auth/v1/token. */
+/**
+ * Lo que responde Supabase Auth en /auth/v1/token. Llega de la red: no confiamos en el tipo,
+ * lo validamos con esUnaRespuestaToken antes de usarlo.
+ */
 type RespuestaToken = {
   access_token: string;
   refresh_token: string;
   expires_in: number; // segundos
   user?: { email?: string };
 };
+
+function esTextoNoVacio(valor: unknown): valor is string {
+  return typeof valor === 'string' && valor.length > 0;
+}
+
+function esUnaRespuestaToken(datos: unknown): datos is RespuestaToken {
+  if (typeof datos !== 'object' || datos === null) return false;
+  const d = datos as Record<string, unknown>;
+  return (
+    esTextoNoVacio(d.access_token) &&
+    esTextoNoVacio(d.refresh_token) &&
+    typeof d.expires_in === 'number' &&
+    Number.isFinite(d.expires_in) &&
+    d.expires_in > 0
+  );
+}
 
 /**
  * Adaptador: Supabase Auth por HTTP, sin librerías extra.
@@ -50,7 +69,18 @@ export function crearIdentidadSupabase(
       throw new ErrorIdentidad('SIN_CONEXION', `El servicio de inicio de sesión respondió ${respuesta.status}`);
     }
 
-    const datos = (await respuesta.json()) as RespuestaToken;
+    // Un 200 no garantiza un cuerpo útil: validamos en el borde para que nunca entre un NaN
+    // o un "Bearer undefined" al resto de la app.
+    let datos: unknown;
+    try {
+      datos = await respuesta.json();
+    } catch {
+      datos = undefined;
+    }
+    if (!esUnaRespuestaToken(datos)) {
+      throw new ErrorIdentidad('RESPUESTA_INVALIDA', 'El servicio de inicio de sesión respondió algo inesperado');
+    }
+
     const sesion: Sesion = {
       accessToken: datos.access_token,
       refreshToken: datos.refresh_token, // ¡nuevo! el anterior ya no sirve (rotación)
@@ -67,11 +97,20 @@ export function crearIdentidadSupabase(
 
     async cerrarSesion(accessToken) {
       const { url, clave } = verificarConfiguracion();
-      // Revoca los refresh tokens en el servidor. Si falla, el GestorSesion ya borró todo localmente.
-      await fetch(`${url}/auth/v1/logout`, {
-        method: 'POST',
-        headers: { apikey: clave, Authorization: `Bearer ${accessToken}` },
-      });
+      // Revoca los refresh tokens en el servidor. Si falla, lo avisamos con un ErrorIdentidad
+      // (como promete el puerto); el GestorSesion ya borró la sesión local antes de llamarnos.
+      let respuesta: Response;
+      try {
+        respuesta = await fetch(`${url}/auth/v1/logout`, {
+          method: 'POST',
+          headers: { apikey: clave, Authorization: `Bearer ${accessToken}` },
+        });
+      } catch {
+        throw new ErrorIdentidad('SIN_CONEXION', 'No se pudo conectar para cerrar la sesión en el servidor');
+      }
+      if (!respuesta.ok) {
+        throw new ErrorIdentidad('SIN_CONEXION', `El servicio de inicio de sesión respondió ${respuesta.status} al cerrar sesión`);
+      }
     },
   };
 }
