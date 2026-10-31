@@ -1,4 +1,6 @@
+import { validarCursos } from '../dominio/curso';
 import type { Movimiento } from '../dominio/movimiento';
+import type { AlmacenCatalogo, ClienteCursos } from './catalogo';
 
 /** Puerto: qué movimientos faltan por enviar al servidor. */
 export interface RegistroPendientes {
@@ -30,16 +32,25 @@ export type ResultadoSincronizacion = {
   enviados: number;
   pendientes: number;
   error?: string;
+  /** Solo con catálogo: se descargó y guardó la copia de cursos. */
+  cursosActualizados?: true;
+  /** Solo con catálogo: falló descargar, validar o guardar los cursos (la copia anterior queda intacta). */
+  errorCursos?: string;
 };
 
 /**
  * Envía los pendientes de a uno y EN ORDEN. Si uno falla, se detiene:
  * el servidor valida cada canje con su propio historial, así que no podemos saltarnos ninguno.
+ * Con `catalogo`, después de enviar (falle algo o no) descarga y guarda los cursos.
  */
-export function crearSincronizador(registro: RegistroPendientes, cliente: ClienteDecimas) {
+export function crearSincronizador(
+  registro: RegistroPendientes,
+  cliente: ClienteDecimas,
+  catalogo?: { cliente: ClienteCursos; almacen: AlmacenCatalogo },
+) {
   let enCurso: Promise<ResultadoSincronizacion> | null = null;
 
-  async function ejecutar(): Promise<ResultadoSincronizacion> {
+  async function enviarPendientes(): Promise<ResultadoSincronizacion> {
     const pendientes = await registro.pendientes();
     let enviados = 0;
     for (const movimiento of pendientes) {
@@ -54,6 +65,19 @@ export function crearSincronizador(registro: RegistroPendientes, cliente: Client
       enviados += 1;
     }
     return { enviados, pendientes: 0 };
+  }
+
+  async function ejecutar(): Promise<ResultadoSincronizacion> {
+    const resultado = await enviarPendientes();
+    if (!catalogo) return resultado;
+    try {
+      const descargado = await catalogo.cliente.descargar();
+      validarCursos(descargado.cursos);
+      await catalogo.almacen.reemplazar(descargado);
+      return { ...resultado, cursosActualizados: true };
+    } catch (error) {
+      return { ...resultado, errorCursos: error instanceof Error ? error.message : String(error) };
+    }
   }
 
   return {
