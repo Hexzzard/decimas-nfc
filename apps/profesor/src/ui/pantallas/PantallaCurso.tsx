@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { Alert, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { NOMBRE_ASIGNATURA_ACTUAL } from '../../config';
+import type { Curso } from '../../dominio/curso';
 import { ErrorDominio } from '../../dominio/errores';
 import type { Estudiante } from '../../dominio/estudiante';
 import type { LibroDecimas } from '../../estado/useLibroDecimas';
@@ -15,19 +16,23 @@ import { BarraSincronizacion } from '../componentes/BarraSincronizacion';
 import type { SesionUI } from '../../estado/useSesion';
 
 type Props = {
+  curso: Curso;
+  /** Solo los estudiantes del curso, en el orden de `curso.estudianteIds`. */
   estudiantes: readonly Estudiante[];
   libro: LibroDecimas;
   sesion: SesionUI;
   onAbrirEstudiante: (estudiante: Estudiante) => void;
+  onVolver: () => void;
 };
 
-export function PantallaCurso({ estudiantes, libro, sesion, onAbrirEstudiante }: Props) {
+export function PantallaCurso({ curso, estudiantes, libro, sesion, onAbrirEstudiante, onVolver }: Props) {
   // null = modo normal; un Set (aunque esté vacío) = modo selección masiva
   const [seleccion, setSeleccion] = useState<Set<string> | null>(null);
   const [cantidad, setCantidad] = useState(1);
   const [motivo, setMotivo] = useState<string | undefined>();
 
   const totalCurso = estudiantes.reduce((suma, e) => suma + libro.saldoDe(e.id), 0);
+  const sinEstudiantes = estudiantes.length === 0;
 
   function alternar(id: string) {
     setSeleccion((previa) => {
@@ -61,8 +66,13 @@ export function PantallaCurso({ estudiantes, libro, sesion, onAbrirEstudiante }:
   return (
     <SafeAreaView style={estilos.pantalla} edges={['top', 'bottom']}>
       <View style={estilos.encabezado}>
+        <Pressable style={estilos.volver} hitSlop={12} onPress={onVolver} accessibilityLabel="Volver al inicio">
+          <Ionicons name="arrow-back" size={22} color={colores.texto} />
+        </Pressable>
         <View style={estilos.textosEncabezado}>
-          <Text style={estilos.titulo}>{seleccion ? `${seleccion.size} seleccionados` : 'Mi curso'}</Text>
+          <Text style={estilos.titulo} numberOfLines={1}>
+            {seleccion ? `${seleccion.size} seleccionados` : curso.nombre}
+          </Text>
           <Text style={estilos.subtitulo}>
             {NOMBRE_ASIGNATURA_ACTUAL} · {estudiantes.length} estudiantes · {textoDecimas(totalCurso)}
           </Text>
@@ -78,6 +88,7 @@ export function PantallaCurso({ estudiantes, libro, sesion, onAbrirEstudiante }:
         data={estudiantes}
         keyExtractor={(e) => e.id}
         contentContainerStyle={estilos.lista}
+        ListEmptyComponent={<Text style={estilos.vacio}>Este curso aún no tiene estudiantes.</Text>}
         renderItem={({ item }) => (
           <FilaEstudiante
             estudiante={item}
@@ -108,7 +119,10 @@ export function PantallaCurso({ estudiantes, libro, sesion, onAbrirEstudiante }:
         </View>
       ) : (
         <View style={estilos.zonaFlotante}>
-          <Pressable style={estilos.botonFlotante} onPress={() => setSeleccion(new Set())}>
+          <Pressable
+            style={[estilos.botonFlotante, sinEstudiantes && estilos.deshabilitado]}
+            disabled={sinEstudiantes}
+            onPress={() => setSeleccion(new Set())}>
             <Ionicons name="people" size={20} color="#FFFFFF" />
             <Text style={estilos.textoBoton}>Otorgar a varios</Text>
           </Pressable>
@@ -121,11 +135,21 @@ export function PantallaCurso({ estudiantes, libro, sesion, onAbrirEstudiante }:
 const estilos = StyleSheet.create({
   pantalla: { flex: 1, backgroundColor: colores.fondo },
   encabezado: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingTop: 12, paddingBottom: 16 },
+  volver: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: colores.superficie,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
+  },
   textosEncabezado: { flex: 1 },
   titulo: { fontSize: 28, fontWeight: '800', color: colores.texto },
   subtitulo: { marginTop: 4, color: colores.textoSuave },
   enlace: { color: colores.primario, fontWeight: '700', fontSize: 16 },
   lista: { paddingHorizontal: 16, paddingBottom: 24 },
+  vacio: { color: colores.textoSuave, textAlign: 'center', paddingVertical: 24 },
   panelMasivo: {
     backgroundColor: colores.superficie,
     borderTopLeftRadius: radio.l,
