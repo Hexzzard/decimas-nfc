@@ -10,7 +10,15 @@
       "Bash(sam deploy *)",
       "Bash(sam delete *)",
       "Bash(aws *)",
-      "Bash(gh pr merge *)"
+      "Bash(gh pr merge *)",
+      "Edit(**/.env)",
+      "Edit(**/.env.*)",
+      "Edit(**/*.local.ps1)",
+      "Edit(**/samconfig.toml)",
+      "Write(**/.env)",
+      "Write(**/.env.*)",
+      "Write(**/*.local.ps1)",
+      "Write(**/samconfig.toml)"
     ],
     "ask": [
       "Bash(git push *)",
@@ -26,7 +34,12 @@
       "Bash(git diff)",
       "Bash(git diff --stat main...HEAD)",
       "Bash(git diff main...HEAD)",
-      "Bash(git log --oneline -20)"
+      "Bash(git log --oneline -20)",
+      "Bash(git diff *)",
+      "Bash(git log *)",
+      "Bash(git show *)",
+      "Bash(git diff --stat *)",
+      "Bash(node --test .claude/hooks/guardia-rol.test.mjs)"
     ]
   }
 }

@@ -1,1 +1,9 @@
 .claude/worktrees/
+
+# Sistema de agentes (en prueba, aún no se publica)
+.claude/agents/
+.claude/hooks/
+.claude/skills/
+.claude/README.md
+docs/specs/
+CLAUDE.local.md
