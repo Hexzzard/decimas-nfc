@@ -1,8 +1,12 @@
 package cl.decimas.backend.infraestructura.config;
 
+import cl.decimas.backend.aplicacion.ConsultarCursos;
 import cl.decimas.backend.aplicacion.ConsultarSaldos;
 import cl.decimas.backend.aplicacion.RegistrarMovimiento;
+import cl.decimas.backend.aplicacion.puerto.RepositorioCursos;
 import cl.decimas.backend.aplicacion.puerto.RepositorioMovimientos;
+import cl.decimas.backend.infraestructura.persistencia.RepositorioCursosEnMemoria;
+import cl.decimas.backend.infraestructura.persistencia.RepositorioCursosPostgres;
 import cl.decimas.backend.infraestructura.persistencia.RepositorioMovimientosEnMemoria;
 import cl.decimas.backend.infraestructura.persistencia.RepositorioMovimientosPostgres;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -24,6 +28,23 @@ public class ConfiguracionCasosDeUso {
     @ConditionalOnProperty(name = "decimas.persistencia", havingValue = "postgres")
     RepositorioMovimientos repositorioPostgres(JdbcClient jdbc) {
         return new RepositorioMovimientosPostgres(jdbc);
+    }
+
+    @Bean
+    @ConditionalOnProperty(name = "decimas.persistencia", havingValue = "memoria")
+    RepositorioCursos repositorioCursosEnMemoria() {
+        return new RepositorioCursosEnMemoria();
+    }
+
+    @Bean
+    @ConditionalOnProperty(name = "decimas.persistencia", havingValue = "postgres")
+    RepositorioCursos repositorioCursosPostgres(JdbcClient jdbc) {
+        return new RepositorioCursosPostgres(jdbc);
+    }
+
+    @Bean
+    ConsultarCursos consultarCursos(RepositorioCursos repositorio) {
+        return new ConsultarCursos(repositorio);
     }
 
     @Bean
