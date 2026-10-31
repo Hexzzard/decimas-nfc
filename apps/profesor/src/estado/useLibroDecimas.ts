@@ -2,8 +2,11 @@ import { useEffect, useState } from 'react';
 import type { ServicioDecimas } from '../aplicacion/servicioDecimas';
 import type { ResultadoSincronizacion, Sincronizador } from '../aplicacion/sincronizacion';
 import { ASIGNATURA_ACTUAL } from '../config';
+import type { Curso } from '../dominio/curso';
+import type { Estudiante } from '../dominio/estudiante';
 import type { Movimiento, TipoMovimiento } from '../dominio/movimiento';
 import { calcularSaldos, historialDe } from '../dominio/saldos';
+import { ultimosMovimientos, type FilaUltimoMovimiento } from '../dominio/ultimosMovimientos';
 
 /**
  * Conecta los casos de uso con React.
@@ -62,6 +65,11 @@ export function useLibroDecimas(servicio: ServicioDecimas, sincronizador: Sincro
     otorgarMasivo,
     saldoDe: (estudianteId: string) => calcularSaldos(movimientos, estudianteId)[ASIGNATURA_ACTUAL],
     historialDe: (estudianteId: string, limite?: number) => historialDe(movimientos, estudianteId, limite),
+    ultimosMovimientos: (
+      estudiantes: readonly Estudiante[],
+      cursos: readonly Curso[],
+      limite?: number,
+    ): FilaUltimoMovimiento[] => ultimosMovimientos(movimientos, estudiantes, cursos, limite),
     sincronizacion: { pendientes, sincronizando, ultima: ultimaSincronizacion, sincronizar },
   };
 }

@@ -1,4 +1,8 @@
-export type CodigoError = 'CANTIDAD_INVALIDA' | 'SALDO_INSUFICIENTE' | 'SIN_ESTUDIANTES';
+export type CodigoError =
+  | 'CANTIDAD_INVALIDA'
+  | 'SALDO_INSUFICIENTE'
+  | 'SIN_ESTUDIANTES'
+  | 'ESTUDIANTE_EN_VARIOS_CURSOS';
 
 export class ErrorDominio extends Error {
   readonly codigo: CodigoError;

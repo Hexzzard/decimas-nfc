@@ -1,14 +1,15 @@
 import * as Crypto from 'expo-crypto';
 import { SQLiteProvider, useSQLiteContext, type SQLiteDatabase } from 'expo-sqlite';
 import { StatusBar } from 'expo-status-bar';
-import { useMemo, useState } from 'react';
-import { ActivityIndicator, StyleSheet, View } from 'react-native';
+import { useEffect, useMemo, useState } from 'react';
+import { ActivityIndicator, BackHandler, StyleSheet, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { crearServicioDecimas } from './src/aplicacion/servicioDecimas';
 import { crearGestorSesion } from './src/aplicacion/sesion';
 import { crearSincronizador } from './src/aplicacion/sincronizacion';
 import { SUPABASE_PUBLISHABLE_KEY, SUPABASE_URL, URL_API } from './src/config';
-import { ESTUDIANTES_DEMO, MOVIMIENTOS_DEMO } from './src/datos/demo';
+import { CURSOS_DEMO, ESTUDIANTES_DEMO, MOVIMIENTOS_DEMO } from './src/datos/demo';
+import { estudiantesDelCurso, type Curso } from './src/dominio/curso';
 import type { Estudiante } from './src/dominio/estudiante';
 import { useLibroDecimas } from './src/estado/useLibroDecimas';
 import { useSesion } from './src/estado/useSesion';
@@ -18,6 +19,7 @@ import { crearIdentidadSupabase } from './src/infraestructura/identidadSupabase'
 import { crearRepositorioSqlite, prepararBaseDeDatos } from './src/infraestructura/repositorioSqlite';
 import { ModalEstudiante } from './src/ui/pantallas/ModalEstudiante';
 import { PantallaCurso } from './src/ui/pantallas/PantallaCurso';
+import { PantallaInicio } from './src/ui/pantallas/PantallaInicio';
 import { colores } from './src/ui/tema';
 
 export default function App() {
@@ -61,6 +63,23 @@ function Contenido() {
   const libro = useLibroDecimas(servicio, sincronizador);
   const sesion = useSesion(gestorSesion);
   const [abierto, setAbierto] = useState<Estudiante | null>(null);
+  // null = pantalla de inicio; un curso = PantallaCurso de ese curso. No se recuerda entre aperturas.
+  const [cursoAbierto, setCursoAbierto] = useState<Curso | null>(null);
+  const estudiantesCurso = useMemo(
+    () => (cursoAbierto ? estudiantesDelCurso(cursoAbierto, ESTUDIANTES_DEMO) : []),
+    [cursoAbierto],
+  );
+
+  // Android: el botón atrás del sistema vuelve al inicio mientras se ve un curso y no hay modal abierto
+  // (con el modal abierto, lo maneja su onRequestClose).
+  useEffect(() => {
+    if (cursoAbierto === null || abierto !== null) return;
+    const suscripcion = BackHandler.addEventListener('hardwareBackPress', () => {
+      setCursoAbierto(null);
+      return true;
+    });
+    return () => suscripcion.remove();
+  }, [cursoAbierto, abierto]);
 
   if (libro.cargando) {
     return (
@@ -72,12 +91,26 @@ function Contenido() {
 
   return (
     <>
-      <PantallaCurso
-        estudiantes={ESTUDIANTES_DEMO}
-        libro={libro}
-        sesion={sesion}
-        onAbrirEstudiante={setAbierto}
-      />
+      {cursoAbierto ? (
+        <PantallaCurso
+          // key: al cambiar de curso se descarta cualquier selección masiva a medias.
+          key={cursoAbierto.id}
+          curso={cursoAbierto}
+          estudiantes={estudiantesCurso}
+          libro={libro}
+          sesion={sesion}
+          onAbrirEstudiante={setAbierto}
+          onVolver={() => setCursoAbierto(null)}
+        />
+      ) : (
+        <PantallaInicio
+          cursos={CURSOS_DEMO}
+          estudiantes={ESTUDIANTES_DEMO}
+          libro={libro}
+          sesion={sesion}
+          onAbrirCurso={setCursoAbierto}
+        />
+      )}
       <ModalEstudiante estudiante={abierto} libro={libro} onCerrar={() => setAbierto(null)} />
     </>
   );
