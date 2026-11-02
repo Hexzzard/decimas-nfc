@@ -16,6 +16,7 @@ export function BarraSincronizacion({ sincronizacion, sesion }: Props) {
   const [pidiendoSesion, setPidiendoSesion] = useState(false);
   const alDia = pendientes === 0;
   const error = ultima?.error;
+  const errorCursos = ultima?.errorCursos;
 
   return (
     <View style={estilos.contenedor}>
@@ -29,8 +30,8 @@ export function BarraSincronizacion({ sincronizacion, sesion }: Props) {
 
         {sesion.activa ? (
           <Pressable
-            style={[estilos.boton, (alDia || sincronizando) && estilos.deshabilitado]}
-            disabled={alDia || sincronizando}
+            style={[estilos.boton, sincronizando && estilos.deshabilitado]}
+            disabled={sincronizando}
             onPress={() => void sincronizar()}>
             {sincronizando ? (
               <ActivityIndicator size="small" color="#FFFFFF" />
@@ -46,6 +47,7 @@ export function BarraSincronizacion({ sincronizacion, sesion }: Props) {
       </View>
 
       {error && sesion.activa ? <Text style={estilos.error}>{error}</Text> : null}
+      {errorCursos && sesion.activa ? <Text style={estilos.error}>{errorCursos}</Text> : null}
 
       {sesion.activa ? (
         <View style={estilos.filaSesion}>

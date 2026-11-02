@@ -13,7 +13,7 @@ public class ManejadorErrores {
     @ExceptionHandler(ErrorDominio.class)
     public ProblemDetail manejarErrorDominio(ErrorDominio error) {
         var estado = switch (error.codigo()) {
-            case SALDO_INSUFICIENTE -> HttpStatus.CONFLICT;
+            case SALDO_INSUFICIENTE, ESTUDIANTE_EN_VARIOS_CURSOS -> HttpStatus.CONFLICT;
             case CANTIDAD_INVALIDA, ESTUDIANTE_DISTINTO -> HttpStatus.BAD_REQUEST;
         };
         var problema = ProblemDetail.forStatusAndDetail(estado, error.getMessage());

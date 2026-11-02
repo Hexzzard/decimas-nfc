@@ -14,11 +14,7 @@
       "Edit(**/.env)",
       "Edit(**/.env.*)",
       "Edit(**/*.local.ps1)",
-      "Edit(**/samconfig.toml)",
-      "Write(**/.env)",
-      "Write(**/.env.*)",
-      "Write(**/*.local.ps1)",
-      "Write(**/samconfig.toml)"
+      "Edit(**/samconfig.toml)"
     ],
     "ask": [
       "Bash(git push *)",

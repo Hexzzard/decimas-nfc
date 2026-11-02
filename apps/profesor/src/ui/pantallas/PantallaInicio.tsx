@@ -30,7 +30,9 @@ export function PantallaInicio({ cursos, estudiantes, libro, sesion, onAbrirCurs
 
       <ScrollView contentContainerStyle={estilos.contenido}>
         <Text style={estilos.tituloSeccion}>Mis cursos</Text>
-        {cursos.length === 0 ? <Text style={estilos.vacio}>Aún no tienes cursos.</Text> : null}
+        {cursos.length === 0 ? (
+          <Text style={estilos.vacio}>Aún no tienes cursos. Se descargan al iniciar sesión y sincronizar.</Text>
+        ) : null}
         {cursos.map((curso) => {
           const cuantos = estudiantesDelCurso(curso, estudiantes).length;
           return (

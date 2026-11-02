@@ -1,4 +1,5 @@
 import type { SQLiteDatabase } from 'expo-sqlite';
+import type { AlmacenCatalogo } from '../aplicacion/catalogo';
 import type { RepositorioMovimientos } from '../aplicacion/repositorio';
 import type { RegistroPendientes } from '../aplicacion/sincronizacion';
 import type { Asignatura } from '../dominio/asignatura';
@@ -38,6 +39,84 @@ export async function prepararBaseDeDatos(db: SQLiteDatabase): Promise<void> {
       PRAGMA user_version = 2;
     `);
   }
+
+  if (version < 3) {
+    // Migración 3: copia local del catálogo de cursos descargado de la API (con posición para conservar el orden).
+    await db.execAsync(`
+      CREATE TABLE IF NOT EXISTS catalogo_cursos (
+        id       TEXT    PRIMARY KEY,
+        nombre   TEXT    NOT NULL,
+        posicion INTEGER NOT NULL
+      );
+      CREATE TABLE IF NOT EXISTS catalogo_estudiantes (
+        id       TEXT    PRIMARY KEY,
+        nombre   TEXT    NOT NULL,
+        posicion INTEGER NOT NULL
+      );
+      CREATE TABLE IF NOT EXISTS catalogo_curso_estudiante (
+        curso_id      TEXT    NOT NULL,
+        estudiante_id TEXT    NOT NULL,
+        posicion      INTEGER NOT NULL,
+        PRIMARY KEY (curso_id, posicion)
+      );
+      PRAGMA user_version = 3;
+    `);
+  }
+}
+
+/** Copia local del catálogo: se reemplaza completa dentro de una transacción. */
+export function crearAlmacenCatalogoSqlite(db: SQLiteDatabase): AlmacenCatalogo {
+  return {
+    async leer() {
+      const cursos = await db.getAllAsync<{ id: string; nombre: string }>(
+        'SELECT id, nombre FROM catalogo_cursos ORDER BY posicion',
+      );
+      const estudiantes = await db.getAllAsync<{ id: string; nombre: string }>(
+        'SELECT id, nombre FROM catalogo_estudiantes ORDER BY posicion',
+      );
+      const relaciones = await db.getAllAsync<{ curso_id: string; estudiante_id: string }>(
+        'SELECT curso_id, estudiante_id FROM catalogo_curso_estudiante ORDER BY curso_id, posicion',
+      );
+      const idsPorCurso = new Map<string, string[]>();
+      for (const r of relaciones) {
+        const ids = idsPorCurso.get(r.curso_id) ?? [];
+        ids.push(r.estudiante_id);
+        idsPorCurso.set(r.curso_id, ids);
+      }
+      return {
+        cursos: cursos.map((c) => ({ id: c.id, nombre: c.nombre, estudianteIds: idsPorCurso.get(c.id) ?? [] })),
+        estudiantes: estudiantes.map((e) => ({ id: e.id, nombre: e.nombre })),
+      };
+    },
+
+    async reemplazar(catalogo) {
+      await db.withTransactionAsync(async () => {
+        await db.runAsync('DELETE FROM catalogo_curso_estudiante');
+        await db.runAsync('DELETE FROM catalogo_cursos');
+        await db.runAsync('DELETE FROM catalogo_estudiantes');
+        for (const [posicion, curso] of catalogo.cursos.entries()) {
+          await db.runAsync('INSERT INTO catalogo_cursos (id, nombre, posicion) VALUES (?, ?, ?)', [
+            curso.id,
+            curso.nombre,
+            posicion,
+          ]);
+          for (const [pos, estudianteId] of curso.estudianteIds.entries()) {
+            await db.runAsync(
+              'INSERT INTO catalogo_curso_estudiante (curso_id, estudiante_id, posicion) VALUES (?, ?, ?)',
+              [curso.id, estudianteId, pos],
+            );
+          }
+        }
+        for (const [posicion, estudiante] of catalogo.estudiantes.entries()) {
+          await db.runAsync('INSERT INTO catalogo_estudiantes (id, nombre, posicion) VALUES (?, ?, ?)', [
+            estudiante.id,
+            estudiante.nombre,
+            posicion,
+          ]);
+        }
+      });
+    },
+  };
 }
 
 /** Así llega cada fila desde SQLite: nombres en snake_case y null en vez de undefined. */
