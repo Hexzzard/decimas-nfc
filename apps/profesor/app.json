@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "profesor",
+    "name": "Décimas Profesor",
     "slug": "profesor",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -16,7 +16,8 @@
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "package": "cl.decimas.profesor"
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -24,6 +25,12 @@
     "plugins": [
       "expo-sqlite",
       "expo-secure-store"
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "f0766978-f204-4272-a74f-8dbdfeab2176"
+      }
+    },
+    "owner": "hexzzard"
   }
 }
